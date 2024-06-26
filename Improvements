@@ -1,0 +1,22 @@
+Improvements:
+
+- Remove the white border around the dropdown menu. https://stackoverflow.com/questions/62269892/get-rid-of-white-border-around-option-menu
+
+Pack an executable:
+
+pyinstaller -F --paths=C:\Users\marek\Darkroom\.venv\Lib\site-packages  Darkroom.py
+
+Internet access state,Device Type,Client Name,Client IP address,IP Method,Clients MAC Address,Interface,Tx Rate,Rx Rate,Access time
+Allow Internet access,GIGA-BYTE TECHNOLOGY CO. LTD.,WINDOWS-10-MAREK,192.168.51.4,MAC-IP Binding,B4:2E:99:D3:F5:5B,Wired,-,-,-
+Allow Internet access,Loading manufacturer..,1C:ED:6F:5E:D4:34,192.168.178.1,Static IP,1C:ED:6F:5E:D4:34,Wired,-,-,-
+Allow Internet access,Loading manufacturer..,DC:C2:C9:49:19:67,192.168.51.131,Automatic IP,DC:C2:C9:49:19:67,Wired,-,-,-
+Allow Internet access,Synology NAS,Synology,192.168.51.2,MAC-IP Binding,00:11:32:17:41:A5,Wired,-,-,-
+
+SENSOR Allow Internet access,Nest Labs,4C:A9:19:BE:04:5D,192.168.51.15,Automatic IP,4C:A9:19:BE:04:5D,2.4 GHz,65,72.2,08:12:59
+
+Allow Internet access,Loading manufacturer..,lwip0,192.168.51.21,Automatic IP,B8:06:0D:9F:8B:B9,2.4 GHz,24,36,10:01:32
+Allow Internet access,Loading manufacturer..,lwip0,192.168.51.112,Automatic IP,4C:A9:19:28:23:BF,2.4 GHz,54,54,09:58:02
+Allow Internet access,Loading manufacturer..,lwip0,192.168.51.147,Automatic IP,B8:06:0D:AD:64:89,2.4 GHz,48,54,05:52:23
+Allow Internet access,Loading manufacturer..,lwip0,192.168.51.163,Automatic IP,B8:06:0D:9E:FC:DC,2.4 GHz,48,36,09:14:20
+Allow Internet access,Loading manufacturer..,lwip0,192.168.51.198,Automatic IP,B8:06:0D:9F:82:3A,2.4 GHz,48,18,03:40:09
+Allow Internet access,Loading manufacturer..,lwip0,192.168.51.207,Automatic IP,B8:06:0D:9F:E4:A5,2.4 GHz,48,12,01:33:46
