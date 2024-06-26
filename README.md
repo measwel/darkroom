@@ -59,28 +59,15 @@ The rest of the settings can be left at their initial values.
 
 **Notes on uuids**  
 
-"lamp_uuids" : At least 1 darkroom lamp uuid is mandatory. If you have more smart RGB LEDs to use as darkroom lamps, put their guids in the array, comma separated.  
-
-"enlarger_switch_uuid" or "enlarger_lamp_uuid" : One of these two is mandatory. You can also provide both.  
+"lamp_uuids" : Providing this will allow switching on and off the darkroom red lights.   
+If you have more smart RGB LEDs to use as darkroom lamps, put their guids in the array, comma separated.  
 
 "enlarger_switch_uuid" : Providing this will allow using a smart outlet to switch the enlarger on and off.
 
-"enlarger_lamp_uuid" : Providing this will allow using a smart LED in the enlarger head to switch the enlarger on and off. It will also allow setting the brightness of the enlarger head by means of a slider.
+ "light_intensity_sensor_uuid" : Providing this will allow taking a light intensity measurement under the enlarger head and calculating the exposure time automatically for given paper.
 
 Note:  
-Switching the enlarger with a smart outlet switch is slightly more responsive and allows for slightly better timing.  
-Using a smart LED in the enlarger head offers some unique benefits however:  
 
-- The option to control the exposure brightness very accurately.
-- High maximum light output, which may be beneficial when making large prints. Especially in case of 15W LEDs.
-- A long lifespan of the bulb. 
-- Control of the white light color temperature which may affect contrast. 
-
-If both "enlarger_switch_uuid" and "enlarger_lamp_uuid" are provided, you can control the enlarger switching method by setting the option "use_enlarger_lamp_for_switching".    
-true : use smart led lamp in the enlarger head.  
-false : use smart outlet switch.  
-
-"light_intensity_sensor_uuid" : Providing this will allow taking a light intensity measurement under the enlarger head and calculating the exposure time automatically for given paper.
 
 <pre>
 {  
@@ -90,9 +77,6 @@ false : use smart outlet switch.
   "enlarger_switch_uuid": "xxx", <-- Set uuid of your smart power outlet that will control your enlarger.  
   "light_intensity_sensor_uuid": "xxx", <-- Set uuid of your light intensity sensor. Without it, automatic exposure time calculation will not work.  
   "lamps_brightness": 10,  <-- Initial lamps brightness. It will get updated automatically if you change it in the application.
-  "enlarger_lamp_uuid": "xxx", <-- uuid of the smart LED lamp in the enlarger head. See also the option "use_enlarger_lamp_for_switching" below.
-  "enlarger_brightness": 237, <-- Initial brightness of the smart LED in the enlarger head. It will get updated automatically if you change it in the application.
-  "white_light_temp": 1000, <-- White light color temperature of the enlarger head lamp. From 0 to 1000. 0 : warm white. 1000: cold white.
   "max_exposure_time": 30.0, <-- Maximum number of seconds of the exposure time scale.  
   "time_increments": 0.1, <-- Exposure time increase step in seconds, when moving the exposure slider.  
   "base_f_stop_exposure_time": 15.0, <-- When making an F-Stops based teststrip, this will be the exposure time of the strip in the middle.
@@ -103,7 +87,6 @@ false : use smart outlet switch.
   "interface_font_size": 15, <-- fontsize of all elements except sliders
   "large_slider_font_size": 20,  <-- fontsize of the large sliders
   "small_slider_font_size": 10, <-- fontsize of the small sliders
-  "use_enlarger_lamp_for_switching": <-- What to use for switching the enlarger. true : use smart led lamp in the enlarger head. false : use smart outlet switch.  
   "switch_off_lamps_when_exposing": true, <-- Whether the darkroom lamps should go off when the enlarger is switched on.  
   "voice_output": true, <-- Should user messages be spoken out loud. This enables using the application with the monitor turned off.  
   "beep_each_second": true, <-- Make a beep after each second during exposure.
