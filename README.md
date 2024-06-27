@@ -1,11 +1,12 @@
 # Darkroom
 Automated darkroom control for photo development based on smartlife / tuya devices
 
-# Needed hardware
+# Hardware
 
 - One or more wifi controlled smartlife/tuya RGB led lamps. Example: https://ae01.alicdn.com/kf/S46afcd28b23b400791dad89e8fa60a265/Tuya-wifi-bluetooth-smart-lampe-alexa-led-lampe-e27-rgb-smart-gl-hbirnen-110v-220v-smart.jpg_.webp
 - A wifi controlled smartlife/tuya power outlet. Example: https://ae01.alicdn.com/kf/S97fb815945d1451cbc119818dae47ebdA/Tuya-Smart-Plug-Wifi-EU-16a-20a-Smart-Socket-mit-Power-Monitor-Timing-Smart-Life-Support.jpg_640x640.jpg_.webp
 - Optionally: a wifi controlled usb powered smartlife/tuya light sensor. Example: https://ae01.alicdn.com/kf/S9557b883c7ea4769bb3171bf9ce00533T/Tuya-ZigBee-Wifi-Lichtsensor-Intelligente-Home-Beleuchtung-Sensor-Helligkeits-detektor-Automatisierung-Arbeit-mit-Smart-Life-Linkage.jpg_640x640.jpg_.webp
+- Recommended: A LED bulb for the enlarger head. White glass, at least 2000 lumen, 4000 Kelvin (cool white). Example: https://i.ebayimg.com/images/g/pCYAAOSwyRllQLOs/s-l1600.jpg or https://i.ebayimg.com/images/g/p0YAAOSwh59khYvP/s-l1600.jpg
 
 # Preparing the code
 
