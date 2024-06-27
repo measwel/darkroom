@@ -42,8 +42,8 @@ class UserInterface(Tk):
         self.mode = StringVar()
         self.increment = StringVar()
         self.calculated_exposure_time = DoubleVar(value=0.0)
-        self.exposure_time = DoubleVar(value=self.settings["max_exposure_time"]/2)
-        self.slider_time = DoubleVar(value=self.settings["max_exposure_time"]/2)
+        self.exposure_time = DoubleVar(value=self.settings["base_exposure_time"])
+        self.slider_time = DoubleVar(value=self.settings["base_exposure_time"])
         self.f_stop = DoubleVar(value=0.0)
         self.lamps_brightness = IntVar(value=self.settings["lamps_brightness"])
         self.calculated_exposure_time = DoubleVar(value=0.0)
@@ -87,7 +87,7 @@ class UserInterface(Tk):
         # exposure slider - seconds
         self.exposure_slider = Scale(self.exposure_frame,
                                 from_=0.0, 
-                                to=self.settings["max_exposure_time"], 
+                                to=self.settings["base_exposure_time"]*2, 
                                 tickinterval=1, 
                                 resolution=self.settings["time_increment"], 
                                 orient=HORIZONTAL, 
@@ -320,10 +320,10 @@ class UserInterface(Tk):
     def test_devices(self):
         # self.after(300000, self.test_devices) #recheck the devices each 5 minutes
         try:
+            self.check_device_status(self.devices["enlarger_switch"])
+
             for l in self.devices["darkroom_lamps"]:
                 self.check_device_status(l)
-
-            self.check_device_status(self.devices["enlarger_switch"])
             
             if self.devices["light_sensor"]: 
                 self.check_device_status(self.devices["light_sensor"])
@@ -358,16 +358,13 @@ class UserInterface(Tk):
             for l in self.devices["darkroom_lamps"]:
                 l.set_white(10,1)
                 l.turn_on()
-                #self.check_device_status(l)
         elif state=="red":
             for l in self.devices["darkroom_lamps"]:
                 l.set_colour(self.lamps_brightness.get(),0,0)
                 l.turn_on()
-                #self.check_device_status(l)
         else:
             for l in self.devices["darkroom_lamps"]:
                 l.turn_off()
-                #self.check_device_status(l)
 
     def switch_enlarger(self, ev):
         status = self.check_device_status(self.devices["enlarger_switch"])
@@ -379,7 +376,7 @@ class UserInterface(Tk):
 
     def check_status(self, s, d):
         ok = True
-        if d == None:
+        if d == None or s == None:
             ok = False
         elif s and "Error" in s: 
             msg = f'{self.device_name(d)} : {s["Error"]}'
@@ -387,19 +384,19 @@ class UserInterface(Tk):
             ok = False
 
         if not ok: 
-            return None
+            raise Exception("Device error")
         else:
             return s
 
     def check_device_status(self, d):
-        def device_status(d):
+        def get_device_status(d):
             if not d == None:
                 return d.status()
             else:
                 return None   
                  
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(device_status, d)
+            future = executor.submit(get_device_status, d)
             status = future.result()
 
         return self.check_status(status, d)
@@ -411,8 +408,6 @@ class UserInterface(Tk):
         d = self.devices["enlarger_switch"]
         d.turn_on()
         self.starttime = time.time()
-        
-        #self.check_device_status(d)
 
     def switch_enlarger_off(self):
         if self.exposing:
@@ -427,8 +422,7 @@ class UserInterface(Tk):
         print(f"exposed for: {time.time() - self.starttime}")
 
         if self.settings["switch_off_lamps_when_exposing"]: 
-            self.switch_darkroom_lamps("red")
-        #self.check_device_status(d)         
+            self.switch_darkroom_lamps("red") 
 
     def request_light_measurement(self):
         self.message_to_user("Turn on the enlarger and then press BACKSPACE to measure the light intensity.")
@@ -678,7 +672,7 @@ class UserInterface(Tk):
             self.exposure_slider.configure(state='normal')
             self.exposure_slider_f.configure(state='normal')
             self.reset_strip_button.grid_remove()
-            self.exposure_time_changed(self.settings["max_exposure_time"]/2)
+            self.exposure_time_changed(self.settings["base_exposure_time"])
         elif self.mode.get() == "(T) Teststrip" or self.mode.get() == "(F) Teststrip":
             self.test_strip_frame.grid()
             self.exposure_slider.configure(state='disabled')
@@ -710,12 +704,12 @@ class UserInterface(Tk):
 
     def stops_to_time(self, f):
         factor = 2**float(f)
-        t = round(self.settings["base_f_stop_exposure_time"]*factor,1)
+        t = round(self.settings["base_exposure_time"]*factor,1)
         return t
     
     def time_to_stops(self, t):
         try:
-            factor = float(t)/self.settings["base_f_stop_exposure_time"]
+            factor = float(t)/self.settings["base_exposure_time"]
             stops = math.log(factor)/math.log(2)
             t = round(stops,2)
             return t

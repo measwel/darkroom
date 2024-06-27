@@ -1,39 +1,34 @@
 {
   "lamp_uuids": [
-    "replace_by_uuid"
+    "replace_by_uuid(s)"
   ],
   "enlarger_switch_uuid": "replace_by_uuid",
-  "enlarger_lamp_uuid": "replace_by_uuid",
   "light_intensity_sensor_uuid": "replace_by_uuid",
   "lamps_brightness": 123,
-  "enlarger_brightness": 500,
-  "white_light_temp": 1000,
-  "max_exposure_time": 30.0,
+  "base_exposure_time": 20.00,
   "time_increment": 0.1,
-  "base_f_stop_exposure_time": 15.0,
-  "f_stop_increment": "1/3",
-  "f_stop_steps": 15,
+  "f_stop_increment": "1/10",
+  "f_stop_steps": 50,
   "foreground_color": "#6a0500",
   "background_color": "black",
   "interface_font_size": 15,
   "large_slider_font_size": 20,
   "small_slider_font_size": 10,
-  "use_enlarger_lamp_for_switching": false,
   "switch_off_lamps_when_exposing": true,
   "voice_output": true,
   "beep_each_second": true,
   "voice_id": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\TTS_MS_EN-GB_HAZEL_11.0",
   "papers": [
     {
-      "foma": "make_teststrip_to_fill_this",
-      "ilford": "make_teststrip_to_fill_this"
+      "foma low": "16.0 lux for 6.3 seconds",
+      "foma high": "6.0 lux for 6.3 seconds"
     }
   ],
   "teststrip": {
     "save_screenshot": false,
-    "strips": 9,
-    "base_time": 15,
-    "time_increment": 3,
+    "strips": 11,
+    "base_time": 10,
+    "time_increment": 1,
     "f_stop_increment": "1/3"
   }
 }

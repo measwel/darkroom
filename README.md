@@ -3,8 +3,8 @@ Automated darkroom control for photo development based on smartlife / tuya devic
 
 # Hardware
 
-- One or more wifi controlled smartlife/tuya RGB led lamps. Example: https://ae01.alicdn.com/kf/S46afcd28b23b400791dad89e8fa60a265/Tuya-wifi-bluetooth-smart-lampe-alexa-led-lampe-e27-rgb-smart-gl-hbirnen-110v-220v-smart.jpg_.webp
-- A wifi controlled smartlife/tuya power outlet. Example: https://ae01.alicdn.com/kf/S97fb815945d1451cbc119818dae47ebdA/Tuya-Smart-Plug-Wifi-EU-16a-20a-Smart-Socket-mit-Power-Monitor-Timing-Smart-Life-Support.jpg_640x640.jpg_.webp
+- Mandatory: a wifi controlled smartlife/tuya power outlet. Example: https://ae01.alicdn.com/kf/S97fb815945d1451cbc119818dae47ebdA/Tuya-Smart-Plug-Wifi-EU-16a-20a-Smart-Socket-mit-Power-Monitor-Timing-Smart-Life-Support.jpg_640x640.jpg_.webp
+- Optionally: one or more wifi controlled smartlife/tuya RGB LED bulbs. Example: https://ae01.alicdn.com/kf/S46afcd28b23b400791dad89e8fa60a265/Tuya-wifi-bluetooth-smart-lampe-alexa-led-lampe-e27-rgb-smart-gl-hbirnen-110v-220v-smart.jpg_.webp
 - Optionally: a wifi controlled usb powered smartlife/tuya light sensor. Example: https://ae01.alicdn.com/kf/S9557b883c7ea4769bb3171bf9ce00533T/Tuya-ZigBee-Wifi-Lichtsensor-Intelligente-Home-Beleuchtung-Sensor-Helligkeits-detektor-Automatisierung-Arbeit-mit-Smart-Life-Linkage.jpg_640x640.jpg_.webp
 - Recommended: A LED bulb for the enlarger head. White glass, at least 2000 lumen, 4000 Kelvin (cool white). Example: https://i.ebayimg.com/images/g/pCYAAOSwyRllQLOs/s-l1600.jpg or https://i.ebayimg.com/images/g/p0YAAOSwh59khYvP/s-l1600.jpg
 
@@ -36,53 +36,54 @@ G. Run the application. You can run it without set up devices, but then device c
 
 1. Install your smart devices.
 
-**All devices should be linked to the local wifi network via the Smartlife / Tuya application on a smartphone, before they can be used in the Darkroom program.**
-
-The enlarger should be controlled by the smart outlet, the RGB LED(s) should serve as the darkroom lamps.  
-The light sensor should be placed on the easel facing the enlarger lens.  
-To take a light intensity (lux) measurement, press BACKSPACE.  
-The program will work without the light sensor, but then automatic exposure time calculation and saving exposure values for photographic papers will not be possible.  
+The smart outlet switch is mandatory. Please plug the enlarger power cord into it. The outlet switch will control the exposure time.  
+The RGB LED(s) are optional, but recommended. They work great as darkroom safelights. If you use a traditional safelight, set the option "switch_off_lamps_when_exposing" to false.  
+The light sensor is optional, but highly recommended. It allows automatic exposure time calculation. It should be placed on the baseboard, facing the enlarger lens.  
+To take a light intensity (lux) measurement, switch on the enlarger with SPACEBAR, make your settings on the enlarger, then press BACKSPACE.  
 
 2. Create the devices.json file
 
+**Please start by linking your devices to the local wifi network via the Smartlife / Tuya application on a smartphone.**
+**Next you should setup an account on https://iot.tuya.com/. Please see https://github.com/jasonacox/tinytuya for instructions.**
+
+Once you can see your devices on iot.tuya.com, please proceed with the next steps:
+
+In Terminal go to the directory with the Darkroom.py sourcecode.
 Generate the 'devices.json' file with: python3 -m tinytuya wizard  
-Scan local devices: python3 -m tinytuya scan  <-- DO NOT FORGET THIS.  
+Scan local devices: python3 -m tinytuya scan  
+
 **Check afterwards if devices.json lists the IP adresses, version numbers and keys for your devices.**  
 For more information please see: https://github.com/jasonacox/tinytuya  
 
 If there is something wrong with devices.json, delete and recreate it with the wizard.  
 
-3. Set up the settings.json file  
+3. Edit the settings.json file  
 
 **Rename the file "rename_to_settings.json" to "settings.json". This will be your settings file.**  
-**The uuids of the relevant devices must next be copied from the devices.json file, into the settings.json file.**  
+**The uuids of the relevant devices must be copied from the devices.json file, into the settings.json file.**  
 The rest of the settings can be left at their initial values.
 
 **Notes on uuids**  
 
-"lamp_uuids" : Providing this will allow switching on and off the darkroom red lights.   
-If you have more smart RGB LEDs to use as darkroom lamps, put their guids in the array, comma separated.  
+"enlarger_switch_uuid" : Providing this will allow using a smart outlet to switch the enlarger on and off. This uuid is mandatory.
 
-"enlarger_switch_uuid" : Providing this will allow using a smart outlet to switch the enlarger on and off.
+"lamp_uuids" : Providing this will allow switching on and off the RGB LEDs which serve as darkroom safelights.   
+If you have more smart RGB LEDs to use as safelights, put their guids in the array, comma separated.  
 
- "light_intensity_sensor_uuid" : Providing this will allow taking a light intensity measurement under the enlarger head and calculating the exposure time automatically for given paper.
-
-Note:  
-
+ "light_intensity_sensor_uuid" : Providing this will allow taking a light intensity measurement under the enlarger head and calculating the exposure time automatically.
 
 <pre>
 {  
-  "lamp_uuids": [ <-- Set uuids of your darkroom lamp(s). These need to be RGB wifi controlled led lamps.  
+  "lamp_uuids": [ <-- Set uuids of your RGB LED darkroom safelight(s). Optional. 
     "xxx", "yyy"
   ],  
-  "enlarger_switch_uuid": "xxx", <-- Set uuid of your smart power outlet that will control your enlarger.  
-  "light_intensity_sensor_uuid": "xxx", <-- Set uuid of your light intensity sensor. Without it, automatic exposure time calculation will not work.  
-  "lamps_brightness": 10,  <-- Initial lamps brightness. It will get updated automatically if you change it in the application.
-  "max_exposure_time": 30.0, <-- Maximum number of seconds of the exposure time scale.  
+  "enlarger_switch_uuid": "xxx", <-- Set uuid of your smart power outlet that will control your enlarger. Mandatory.  
+  "light_intensity_sensor_uuid": "xxx", <-- Set uuid of your light intensity sensor. Optional. Without it, automatic exposure time calculation will not work.  
+  "lamps_brightness": 123,  <-- Initial safelights brightness. It will get updated automatically if you change it in the application.
+  "base_exposure_time": 20.0, <-- The default exposure time that will be in the middle of the time and F-Stop adjustment scales.
   "time_increments": 0.1, <-- Exposure time increase step in seconds, when moving the exposure slider.  
-  "base_f_stop_exposure_time": 15.0, <-- When making an F-Stops based teststrip, this will be the exposure time of the strip in the middle.
-  "f_stop_increment": "1/3", <-- Fraction by which the F-Stops will be adjusted when you move the F-Stop adjustment slider.
-  "f_stop_steps": 15, <-- Total number of F-Stop adjustment steps on both sides of the F-Stop adjustment slider.
+  "f_stop_increment": "1/10", <-- Fraction by which the F-Stops will be adjusted when you move the F-Stop adjustment slider.
+  "f_stop_steps": 50, <-- Total number of F-Stop adjustment steps on both sides of the F-Stop adjustment slider.
   "red": "#6a0500", <-- Hex code of interface color. See: https://icolorpalette.com/color/pastel-red  
     "red": "#6a0500",
   "interface_font_size": 15, <-- fontsize of all elements except sliders
@@ -99,11 +100,11 @@ Note:
     }  
   ],  
   "teststrip": { 
-    "save_screenshot": true, <-- A screenshot will be saved showing which teststrip you have double clicked and which exposure values have been set for your paper.
+    "save_screenshot": true, <-- Should a screenshot be saved to the program directory, when you double click on the best teststrip? 
     "strips": 11, <-- Number of strips on the test photo. Choose an odd number.
-    "base_time": 4, <-- The exposure time of the teststrip that will be in the middle. 
+    "base_time": 15, <-- The exposure time in seconds of the teststrip that will be in the middle. 
     "time_increment": 3, <-- Number of seconds of difference between two consecutive teststrips. Applies to (T) Teststrip mode.
-    "f_stop_increment": "1/4" <-- F-Stop fraction of difference between two consecutive teststrips. Applies to (F) Teststrip mode.
+    "f_stop_increment": "1/3" <-- F-Stop difference between two consecutive teststrips. Applies to (F) Teststrip mode.
   }  
 }  
 </pre>
