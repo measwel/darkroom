@@ -472,7 +472,7 @@ class UserInterface(Tk):
     def get_lux_from_sensor(self):
         if not self.devices["light_sensor"]: 
             lux = randrange(1,1000)
-            self.after(7000, self.message_to_user,"The set lux value is fake. Add a light sensor to measure real lux values.")
+            self.after(7000, self.message_to_user,"The set lux value is simulated. Add a light sensor to measure real lux values.")
         else:
             s = self.devices["light_sensor"].status()
             if s and s["dps"]["7"]:
