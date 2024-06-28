@@ -14,6 +14,7 @@ from fractions import Fraction
 import math
 from datetime import datetime
 import sys
+import numbers
 
 if sys.platform == 'win32':
     import winsound
@@ -692,7 +693,9 @@ class UserInterface(Tk):
         self.i2["text"]=t
         self.expose_button["text"]=f'ENTER : Expose for {t} seconds'
         f = self.time_to_stops(t)
-        self.f_stop.set(f)
+        if isinstance(f, numbers.Number): 
+            self.f_stop.set(f)
+            
 
     def f_stops_changed(self, f):
         t = self.stops_to_time(f)
