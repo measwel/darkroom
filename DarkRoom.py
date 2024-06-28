@@ -274,7 +274,6 @@ class UserInterface(Tk):
             print (file_contents)
             f.close()
             msg = f"\n'{err.filename}' {err.strerror}. Scroll up or open the README.md to read how to solve it.\n"
-            self.message_to_user(msg)
             print (msg)
 
     def initialize_devices(self):
