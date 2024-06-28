@@ -53,6 +53,7 @@ class UserInterface(Tk):
         self.strip_nr = 0
         self.measured_lux = 0
         self.lasttime = 0
+        self.starttime = 0
         self.exposing = False
 
         ####################### Create Interface Elements ##############################
@@ -284,7 +285,7 @@ class UserInterface(Tk):
             self.message_to_user("All devices are online.")
         except:
             msg = "See the README how to setup your devices."
-            self.after(7000, self.message_to_user, msg)
+            self.after(5000, self.message_to_user, msg)
 
     def setup_devices(self):
         try:
@@ -367,6 +368,7 @@ class UserInterface(Tk):
                 l.turn_off()
 
     def switch_enlarger(self, ev):
+        if not self.devices["enlarger_switch"]: return self.message_to_user("Enlarger switch is not available. Please read the README how to set it up.")
         status = self.check_device_status(self.devices["enlarger_switch"])
         switch_state=status['dps']['1'] 
         if switch_state==0: 
@@ -406,7 +408,7 @@ class UserInterface(Tk):
             self.switch_darkroom_lamps("off")
             
         d = self.devices["enlarger_switch"]
-        d.turn_on()
+        if d: d.turn_on()
         self.starttime = time.time()
 
     def switch_enlarger_off(self):
@@ -417,7 +419,7 @@ class UserInterface(Tk):
         self.exposing = False  
 
         d = self.devices["enlarger_switch"]
-        d.turn_off()
+        if d: d.turn_off()
 
         print(f"exposed for: {time.time() - self.starttime}")
 
@@ -432,14 +434,10 @@ class UserInterface(Tk):
         
         if not self.mode.get() == "Timer" and self.measured_lux == 0.0: 
             return self.request_light_measurement()
-                    
-        status = self.check_device_status(self.devices["enlarger_switch"])
-        switch_state=status['dps']['1'] 
-        if switch_state==1: self.switch_enlarger_off()
 
         self.exposing = True
         self.after(1000, self.start_beeping)
-        self.switch_enlarger_on()
+        if self.devices["enlarger_switch"]: self.switch_enlarger_on()
         t = self.exposure_time.get()*1000-35
         self.after(int(t), self.switch_enlarger_off) 
 
@@ -474,7 +472,7 @@ class UserInterface(Tk):
     def get_lux_from_sensor(self):
         if not self.devices["light_sensor"]: 
             lux = randrange(1,1000)
-            self.after(4000, self.message_to_user("Fake lux value set. Add a light sensor to measure real lux values."))
+            self.after(7000, self.message_to_user,"The set lux value is fake. Add a light sensor to measure real lux values.")
         else:
             s = self.devices["light_sensor"].status()
             if s and s["dps"]["7"]:
