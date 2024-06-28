@@ -692,7 +692,7 @@ class UserInterface(Tk):
         self.i2["text"]=t
         self.expose_button["text"]=f'ENTER : Expose for {t} seconds'
         f = self.time_to_stops(t)
-        if f: self.f_stop.set(f)
+        self.f_stop.set(f)
 
     def f_stops_changed(self, f):
         t = self.stops_to_time(f)
@@ -711,8 +711,8 @@ class UserInterface(Tk):
         try:
             factor = float(t)/self.settings["base_exposure_time"]
             stops = math.log(factor)/math.log(2)
-            t = round(stops,2)
-            return t
+            stops = round(stops,2)
+            return stops
         except:
             return None
     
