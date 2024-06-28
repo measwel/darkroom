@@ -418,10 +418,9 @@ class UserInterface(Tk):
             self.do_next_strip() 
         self.exposing = False  
 
+        print(f"exposed for: {time.time() - self.starttime}")
         d = self.devices["enlarger_switch"]
         if d: d.turn_off()
-
-        print(f"exposed for: {time.time() - self.starttime}")
 
         if self.settings["switch_off_lamps_when_exposing"]: 
             self.switch_darkroom_lamps("red") 
@@ -437,8 +436,8 @@ class UserInterface(Tk):
 
         self.exposing = True
         self.after(1000, self.start_beeping)
-        if self.devices["enlarger_switch"]: self.switch_enlarger_on()
-        t = self.exposure_time.get()*1000-35
+        self.switch_enlarger_on()
+        t = self.exposure_time.get()*1000
         self.after(int(t), self.switch_enlarger_off) 
 
     def beep(self, i):
@@ -692,7 +691,6 @@ class UserInterface(Tk):
         f = self.time_to_stops(t)
         if isinstance(f, numbers.Number): 
             self.f_stop.set(f)
-            
 
     def f_stops_changed(self, f):
         t = self.stops_to_time(f)
