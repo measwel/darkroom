@@ -12,9 +12,7 @@ import concurrent.futures
 import time
 from fractions import Fraction
 import math
-import os
 from datetime import datetime
-
 import sys
 
 if sys.platform == 'win32':
@@ -274,7 +272,9 @@ class UserInterface(Tk):
             file_contents = f.read()
             print (file_contents)
             f.close()
-            print (f"\n'{err.filename}' {err.strerror}. Scroll up or open the README.md to read how to solve it.\n")
+            msg = f"\n'{err.filename}' {err.strerror}. Scroll up or open the README.md to read how to solve it.\n"
+            self.message_to_user(msg)
+            print (msg)
 
     def initialize_devices(self):
         try:
@@ -284,7 +284,7 @@ class UserInterface(Tk):
             self.message_to_user("All devices are online.")
         except:
             msg = "See the README how to setup your devices."
-            self.after(10000, self.message_to_user, msg)
+            self.after(7000, self.message_to_user, msg)
 
     def setup_devices(self):
         try:
@@ -438,8 +438,8 @@ class UserInterface(Tk):
         if switch_state==1: self.switch_enlarger_off()
 
         self.exposing = True
-        self.switch_enlarger_on()
         self.after(1000, self.start_beeping)
+        self.switch_enlarger_on()
         t = self.exposure_time.get()*1000-35
         self.after(int(t), self.switch_enlarger_off) 
 
@@ -579,7 +579,7 @@ class UserInterface(Tk):
 
         for s in range(-steps, steps + 1) :
             if self.mode.get() == "(F) Teststrip":
-                stop_fraction = float(sum(Fraction(s) for s in self.settings["f_stop_increment"].split()))
+                stop_fraction = float(sum(Fraction(s) for s in self.settings["teststrip"]["f_stop_increment"].split()))
                 factor = 2**float(s*stop_fraction)
                 t2 = round(self.settings["teststrip"]["base_time"]*factor,1)
                 t = round(t2 - cor,1)
@@ -725,7 +725,7 @@ class UserInterface(Tk):
     def quit(self, ev): 
         self.switch_darkroom_lamps("white")
         if self.devices["enlarger_switch"]: self.devices["enlarger_switch"].turn_off()
-        exit()
+        sys.exit()
 
 ####################### MAIN ##############################
 

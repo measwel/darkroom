@@ -20,15 +20,15 @@
   "voice_id": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\TTS_MS_EN-GB_HAZEL_11.0",
   "papers": [
     {
-      "foma low": "16.0 lux for 6.3 seconds",
-      "foma high": "6.0 lux for 6.3 seconds"
+      "foma VC": "",
+      "ilford VC": ""
     }
   ],
   "teststrip": {
     "save_screenshot": false,
-    "strips": 11,
-    "base_time": 10,
-    "time_increment": 1,
+    "strips": 9,
+    "base_time": 15,
+    "time_increment": 2,
     "f_stop_increment": "1/3"
   }
 }
