@@ -161,3 +161,6 @@ https://icolorpalette.com/color/pastel-red
 
 Instructions for setting up the tuya account and generating devices.json with the tinytuya wizard can be found in the README at: 
 https://github.com/jasonacox/tinytuya
+
+The legendary Nocon 
+https://www.youtube.com/watch?v=xoAiBNSpg6Y

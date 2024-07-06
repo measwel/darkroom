@@ -15,6 +15,7 @@ import math
 from datetime import datetime
 import sys
 import numbers
+from win32api import SendMessage
 
 if sys.platform == 'win32':
     import winsound
@@ -30,8 +31,9 @@ class UserInterface(Tk):
         self.settings = {}
         self.devices = {
             "enlarger_switch" : None,
-            "darkroom_lamps" : [],
+            "monitor_switch" : None,
             "light_sensor" : None,
+            "darkroom_lamps" : [],
             "listing" : None
         }
 
@@ -257,6 +259,7 @@ class UserInterface(Tk):
         self.bind("<Right>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+self.settings["time_increment"]))
         self.bind("<Down>", lambda e: self.exposure_slider.set(self.exposure_slider.get()-1))
         self.bind("<Up>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+1))
+        self.bind("<m>", lambda e: self.switch_monitor, "on")
 
         self.reset_strip_button.grid_remove()
         self.paper.trace_add("write", self.paper_changed)
@@ -302,6 +305,9 @@ class UserInterface(Tk):
                 if dev["uuid"]==self.settings["enlarger_switch_uuid"]: 
                     self.devices["enlarger_switch"] = self.get_device_handle(dev, 'outlet')
 
+                if dev["uuid"]==self.settings["monitor_switch_uuid"]: 
+                    self.devices["monitor_switch"] = self.get_device_handle(dev, 'outlet')
+
                 for bu in self.settings["lamp_uuids"]:
                     if dev["uuid"]==bu: 
                         lamp = self.get_device_handle(dev, 'bulb')
@@ -310,10 +316,6 @@ class UserInterface(Tk):
             raise Exception()
 
     def checkSettings(self):
-        if not self.settings["lamp_uuids"][0]:
-            self.message_to_user("Please fill the darkroom lamp(s) uuids in the settings jayson file.")
-            raise Exception()
-
         if not len(self.settings["enlarger_switch_uuid"]) > 5:
             self.message_to_user("Please fill the enlarger switch uuid in the settings jayson file.")
             raise Exception() 
@@ -322,12 +324,10 @@ class UserInterface(Tk):
         # self.after(300000, self.test_devices) #recheck the devices each 5 minutes
         try:
             self.check_device_status(self.devices["enlarger_switch"])
-
-            for l in self.devices["darkroom_lamps"]:
-                self.check_device_status(l)
+            if self.devices["monitor_switch"]: self.check_device_status(self.devices["monitor_switch"])
+            if self.devices["light_sensor"]: self.check_device_status(self.devices["light_sensor"])
+            for l in self.devices["darkroom_lamps"]: self.check_device_status(l)
             
-            if self.devices["light_sensor"]: 
-                self.check_device_status(self.devices["light_sensor"])
         except:
             raise Exception()
             
@@ -367,15 +367,6 @@ class UserInterface(Tk):
             for l in self.devices["darkroom_lamps"]:
                 l.turn_off()
 
-    def switch_enlarger(self, ev):
-        if not self.devices["enlarger_switch"]: return self.message_to_user("Enlarger switch is not available. Please read the README how to set it up.")
-        status = self.check_device_status(self.devices["enlarger_switch"])
-        switch_state=status['dps']['1'] 
-        if switch_state==0: 
-            self.switch_enlarger_on()
-        else:
-            self.switch_enlarger_off()
-
     def check_status(self, s, d):
         ok = True
         if d == None or s == None:
@@ -396,34 +387,39 @@ class UserInterface(Tk):
                 return d.status()
             else:
                 return None   
-                 
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(get_device_status, d)
             status = future.result()
 
         return self.check_status(status, d)
 
-    def switch_enlarger_on(self):
-        if self.settings["switch_off_lamps_when_exposing"]: 
-            self.switch_darkroom_lamps("off")
-            
-        d = self.devices["enlarger_switch"]
-        if d: d.turn_on()
-        self.starttime = time.time()
+    def switch_enlarger(self, state):
+        if state == "on":
+            if self.settings["switch_off_monitor_when_exposing"]: self.switch_monitor("off")
+            if self.settings["switch_off_lamps_when_exposing"]: self.switch_darkroom_lamps("off")
+            d = self.devices["enlarger_switch"]
+            if d: d.turn_on()
+            self.starttime = time.time()
+        elif state == "off":
+            if self.exposing:
+                t = threading.Thread(target=self.beep, args=(700,))
+                t.start()
+                self.do_next_strip() 
+            self.exposing = False  
 
-    def switch_enlarger_off(self):
-        if self.exposing:
-            t = threading.Thread(target=self.beep, args=(700,))
-            t.start()
-            self.do_next_strip() 
-        self.exposing = False  
-
-        print(f"exposed for: {time.time() - self.starttime}")
-        d = self.devices["enlarger_switch"]
-        if d: d.turn_off()
-
-        if self.settings["switch_off_lamps_when_exposing"]: 
-            self.switch_darkroom_lamps("red") 
+            print(f"exposed for: {time.time() - self.starttime}")
+            d = self.devices["enlarger_switch"]
+            if d: d.turn_off() 
+            if self.settings["switch_off_lamps_when_exposing"]: self.switch_darkroom_lamps("red")
+        else:
+            if not self.devices["enlarger_switch"]: return self.message_to_user("Enlarger switch is not available. Please read the README how to set it up.")
+            status = self.check_device_status(self.devices["enlarger_switch"])
+            switch_state=status['dps']['1'] 
+            if switch_state==0: 
+                self.switch_enlarger("on")
+            else:
+                self.switch_enlarger("off")
 
     def request_light_measurement(self):
         self.message_to_user("Turn on the enlarger and then press BACKSPACE to measure the light intensity.")
@@ -436,9 +432,9 @@ class UserInterface(Tk):
 
         self.exposing = True
         self.after(1000, self.start_beeping)
-        self.switch_enlarger_on()
+        self.switch_enlarger("on")
         t = self.exposure_time.get()*1000
-        self.after(int(t), self.switch_enlarger_off) 
+        self.after(int(t), self.switch_enlarger, "off") 
 
     def beep(self, i):
         if self.settings["beep_each_second"]: winsound.Beep(i,900)
@@ -461,6 +457,7 @@ class UserInterface(Tk):
         t.start()
 
     def message_to_user(self, message):
+        print(message)
         self.message_box.configure(text=message)
         if self.settings["voice_output"]: self.say(message)
 
@@ -493,11 +490,9 @@ class UserInterface(Tk):
             lux = float(units[0])
             seconds = float(units[1].split()[0]) 
 
-        if self.measured_lux == 0:
-            self.message_to_user("No light sensor reading.")
-            return 0
+        if self.measured_lux == 0: return 0
         elif lux == 0 or seconds == 0:
-            self.message_to_user(f"Exposure values are incorrect. Make a teststrip and set the exposure values for {self.paper.get()} paper.")
+            self.message_to_user(f"Exposure values are missing. Make a teststrip and set the exposure values for {self.paper.get()} paper.")
             return 0
         else:
             factor = lux/self.measured_lux
@@ -508,6 +503,10 @@ class UserInterface(Tk):
         lux = self.get_lux_from_sensor()
         self.measured_lux = lux
         self.i6["text"] = lux
+
+        if lux == 0: self.message_to_user("No light sensor reading.")
+        else : self.message_to_user(f"{lux} lux.")
+
         if self.mode.get() == "Timer":
             t=self.lux_to_time()
             if t>0:
@@ -562,6 +561,7 @@ class UserInterface(Tk):
             return "0"
 
     def reset_strips(self, ev):
+        if self.mode.get() == "Timer": return
         self.strip_times = []
         self.unaltered_f_times = []
         self.measured_lux = 0.0
@@ -685,7 +685,7 @@ class UserInterface(Tk):
     def exposure_time_changed(self, t):
         self.exposure_time.set(t)
         self.slider_time.set(t)
-        self.after(1000, self.check_set_time, t)
+        self.after(2000, self.check_set_time, t)
         self.i2["text"]=t
         self.expose_button["text"]=f'ENTER : Expose for {t} seconds'
         f = self.time_to_stops(t)
@@ -696,7 +696,7 @@ class UserInterface(Tk):
         t = self.stops_to_time(f)
         self.exposure_time.set(t)
         self.slider_time.set(t)
-        self.after(1000, self.check_set_time, t)
+        self.after(2000, self.check_set_time, t)
         self.i2["text"]=t
         self.expose_button["text"]=f'ENTER : Expose for {t} seconds'
 
@@ -719,10 +719,17 @@ class UserInterface(Tk):
 
     def enlarger_brightness_changed(self, b):
         self.after(1000, self.check_enlarger_brightness, b)
-        
-    def quit(self, ev): 
-        self.switch_darkroom_lamps("white")
+
+    def switch_monitor(self, state):
+        m = self.devices["monitor_switch"]
+        if m:
+            if state == "off" : m.turn_off()
+            elif state == "on": m.turn_on()
+
+    def quit(self, ev):
         if self.devices["enlarger_switch"]: self.devices["enlarger_switch"].turn_off()
+        self.switch_darkroom_lamps("white")
+        self.switch_monitor("on")
         sys.exit()
 
 ####################### MAIN ##############################
