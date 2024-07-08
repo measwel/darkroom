@@ -57,6 +57,8 @@ class UserInterface(Tk):
         self.lasttime = 0
         self.starttime = 0
         self.exposing = False
+        self.enlarger_is_on = False
+        self.monitor_is_on = True
 
         ####################### Create Interface Elements ##############################
 
@@ -252,6 +254,7 @@ class UserInterface(Tk):
 
         self.bind( "<Escape>", self.quit )
         self.bind("<space>", self.switch_enlarger)
+        self.bind("<Tab>", self.switch_monitor)
         self.bind("<BackSpace>", self.measure_lux)
         self.bind("<Return>", self.expose)
         self.bind("<Shift_R>", self.reset_strips)
@@ -259,7 +262,7 @@ class UserInterface(Tk):
         self.bind("<Right>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+self.settings["time_increment"]))
         self.bind("<Down>", lambda e: self.exposure_slider.set(self.exposure_slider.get()-1))
         self.bind("<Up>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+1))
-        self.bind("<m>", lambda e: self.switch_monitor, "on")
+
 
         self.reset_strip_button.grid_remove()
         self.paper.trace_add("write", self.paper_changed)
@@ -284,6 +287,7 @@ class UserInterface(Tk):
         try:
             self.setup_devices() 
             self.test_devices()
+            if self.devices["light_sensor"]: self.devices["light_sensor"].turn_on()
             self.switch_darkroom_lamps("red")
             self.message_to_user("All devices are online.")
         except:
@@ -293,7 +297,6 @@ class UserInterface(Tk):
     def setup_devices(self):
         try:
             self.checkSettings()
-
             self.devices["light_sensor"] = None
             self.devices["enlarger_switch"] = None
             self.devices["darkroom_lamps"] = []
@@ -400,6 +403,7 @@ class UserInterface(Tk):
             if self.settings["switch_off_lamps_when_exposing"]: self.switch_darkroom_lamps("off")
             d = self.devices["enlarger_switch"]
             if d: d.turn_on()
+            self.enlarger_is_on = True
             self.starttime = time.time()
         elif state == "off":
             if self.exposing:
@@ -411,12 +415,11 @@ class UserInterface(Tk):
             print(f"exposed for: {time.time() - self.starttime}")
             d = self.devices["enlarger_switch"]
             if d: d.turn_off() 
+            self.enlarger_is_on = False
             if self.settings["switch_off_lamps_when_exposing"]: self.switch_darkroom_lamps("red")
         else:
             if not self.devices["enlarger_switch"]: return self.message_to_user("Enlarger switch is not available. Please read the README how to set it up.")
-            status = self.check_device_status(self.devices["enlarger_switch"])
-            switch_state=status['dps']['1'] 
-            if switch_state==0: 
+            if not self.enlarger_is_on: 
                 self.switch_enlarger("on")
             else:
                 self.switch_enlarger("off")
@@ -466,15 +469,16 @@ class UserInterface(Tk):
         return widget
 
     def get_lux_from_sensor(self):
-        if not self.devices["light_sensor"]: 
-            lux = randrange(1,1000)
-            self.after(7000, self.message_to_user,"The set lux value is simulated. Add a light sensor to measure real lux values.")
+        #if not self.enlarger_is_on: return self.message_to_user("Please switch on the enlarger first.")
+        s = self.devices["light_sensor"]
+
+        if not s: 
+            lux = randrange(1,60)
+            self.after(7000, self.message_to_user,"The lux value is simulated. Add a light sensor to measure real lux values.")
         else:
-            s = self.devices["light_sensor"].status()
-            if s and s["dps"]["7"]:
-                lux = s["dps"]["7"]
-            else:
-                lux = 0.0
+            st = s.status()
+            if st and st["dps"]["7"]: lux = st["dps"]["7"]
+
         return lux
             
     def lux_to_time(self):
@@ -717,17 +721,21 @@ class UserInterface(Tk):
     def lamps_brightness_changed(self, b):
         self.after(1000, self.check_lamps_brightness, b)
 
-    def enlarger_brightness_changed(self, b):
-        self.after(1000, self.check_enlarger_brightness, b)
-
     def switch_monitor(self, state):
         m = self.devices["monitor_switch"]
         if m:
-            if state == "off" : m.turn_off()
-            elif state == "on": m.turn_on()
+            if state == "off" : 
+                m.turn_off()
+                self.monitor_is_on = False
+            elif state == "on": 
+                m.turn_on()
+                self.monitor_is_on = True
+            elif self.monitor_is_on: self.switch_monitor("off")
+            else: self.switch_monitor("on")
 
     def quit(self, ev):
         if self.devices["enlarger_switch"]: self.devices["enlarger_switch"].turn_off()
+        if self.devices["light_sensor"]: self.devices["light_sensor"].turn_off()
         self.switch_darkroom_lamps("white")
         self.switch_monitor("on")
         sys.exit()

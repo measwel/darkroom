@@ -1,12 +1,15 @@
 # Darkroom
+
 Automated darkroom control for photo development based on smartlife / tuya devices
 
 # Hardware
 
-- Mandatory: a wifi controlled smartlife/tuya power outlet. Example: https://ae01.alicdn.com/kf/S97fb815945d1451cbc119818dae47ebdA/Tuya-Smart-Plug-Wifi-EU-16a-20a-Smart-Socket-mit-Power-Monitor-Timing-Smart-Life-Support.jpg_640x640.jpg_.webp
+- Mandatory: a wifi controlled smartlife/tuya power outlet for switching the enlarger. Example: https://ae01.alicdn.com/kf/S97fb815945d1451cbc119818dae47ebdA/
+Tuya-Smart-Plug-Wifi-EU-16a-20a-Smart-Socket-mit-Power-Monitor-Timing-Smart-Life-Support.jpg_640x640.jpg_.webp
+- Optionally: a wifi controlled smartlife/tuya power outlet for switching the computer monitor. 
 - Optionally: one or more wifi controlled smartlife/tuya RGB LED bulbs. Example: https://ae01.alicdn.com/kf/S46afcd28b23b400791dad89e8fa60a265/Tuya-wifi-bluetooth-smart-lampe-alexa-led-lampe-e27-rgb-smart-gl-hbirnen-110v-220v-smart.jpg_.webp
 - Optionally: a wifi controlled usb powered smartlife/tuya light sensor. Example: https://ae01.alicdn.com/kf/S9557b883c7ea4769bb3171bf9ce00533T/Tuya-ZigBee-Wifi-Lichtsensor-Intelligente-Home-Beleuchtung-Sensor-Helligkeits-detektor-Automatisierung-Arbeit-mit-Smart-Life-Linkage.jpg_640x640.jpg_.webp
-- Recommended: A LED bulb for the enlarger head. White glass, at least 2000 lumen, 4000 Kelvin (cool white). Example: https://i.ebayimg.com/images/g/pCYAAOSwyRllQLOs/s-l1600.jpg or https://i.ebayimg.com/images/g/p0YAAOSwh59khYvP/s-l1600.jpg
+- Recommended: A LED bulb for the enlarger head. White glass, at least 2000 lumen, 2700 Kelvin (warm white). Example: https://shop.ledvance.com/cdn/shop/files/4058075305014_290_LEDSCLA15017W-827230VGLFRE27FS1OSRAM.jpg or https://www.beleuchtung-mit-led.de/images/product_images/original_images/ledvance_4099854069833.jpg
 
 # Preparing the code
 
@@ -36,9 +39,10 @@ G. Run the application. You can run it without set up devices, but then device c
 
 1. Install your smart devices.
 
-The smart outlet switch is mandatory. Please plug the enlarger power cord into it. The outlet switch will control the exposure time.  
+The smart outlet switch is mandatory. Please plug the enlarger power cord into it. The outlet switch will control the exposure time. 
+The second smart outlet switch is optional. Please plug your computer monitor power cord into it. This will allow switching off the monitor when exposing.  
 The RGB LED(s) are optional, but recommended. They work great as darkroom safelights. If you use a traditional safelight, set the option "switch_off_lamps_when_exposing" to false.  
-The light sensor is optional, but highly recommended. It allows automatic exposure time calculation. It should be placed on the baseboard, facing the enlarger lens.  
+The light sensor is optional, but recommended. It allows automatic exposure time calculation. It should be placed on the baseboard, facing the enlarger lens.  
 To take a light intensity (lux) measurement, switch on the enlarger with SPACEBAR, make your settings on the enlarger, then press BACKSPACE.  
 
 2. Create the devices.json file
@@ -59,13 +63,14 @@ If there is something wrong with devices.json, delete and recreate it with the w
 
 3. Edit the settings.json file  
 
-**Rename the file "rename_to_settings.json" to "settings.json". This will be your settings file.**  
 **The uuids of the relevant devices must be copied from the devices.json file, into the settings.json file.**  
 The rest of the settings can be left at their initial values.
 
 **Notes on uuids**  
 
 "enlarger_switch_uuid" : Providing this will allow using a smart outlet to switch the enlarger on and off. This uuid is mandatory.
+
+"monitor_switch_uuid" : Providing this will allow turning the computer monitor off when exposing. This uuid is optional. To turn the monitor back on, press the TAB key.
 
 "lamp_uuids" : Providing this will allow switching on and off the RGB LEDs which serve as darkroom safelights.   
 If you have more smart RGB LEDs to use as safelights, put their guids in the array, comma separated.  
@@ -90,6 +95,7 @@ If you have more smart RGB LEDs to use as safelights, put their guids in the arr
   "large_slider_font_size": 20,  <-- fontsize of the large sliders
   "small_slider_font_size": 10, <-- fontsize of the small sliders
   "switch_off_lamps_when_exposing": true, <-- Whether the darkroom lamps should go off when the enlarger is switched on.  
+  "switch_off_monitor_when_exposing": true <-- Whether the computer monitor should go off when the enlarger is switched on. For this to work, the monitor must be powered via a smart switch.  
   "voice_output": true, <-- Should user messages be spoken out loud. This enables using the application with the monitor turned off.  
   "beep_each_second": true, <-- Make a beep after each second during exposure.
   "voice_id": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\TTS_MS_EN-GB_HAZEL_11.0", <-- Registry key of the voice to use.  
@@ -111,7 +117,7 @@ If you have more smart RGB LEDs to use as safelights, put their guids in the arr
 
 # Control without display
 
-Most functions of the application can be controlled via the keyboard with the monitor turned off and voice output turned on.
+Most functions of the application can be controlled via the keyboard.
 
 ARROW UP : Increase exposure time by 1 second.  
 ARROW DOWN : Decrease exposure time by 1 second.  
@@ -121,6 +127,7 @@ ESCAPE : Quit the program.
 BACKSPACE : Calculate the exposure time. This will only work if you have set up a light intensity sensor and determined the exposure value for the used paper.  
 RIGHT SHIFT : Reset the testtrip exposure time.  
 ENTER : Expose for the set time.  
+TAB : Toggle the computer monitor ON and OFF. This will only work if you have connected your monitor via a smart outlet and provided its uuid in settings.json.  
 
 # Making a teststrip
 
@@ -150,10 +157,9 @@ Most LCD monitors will bleed light from the backlight which might be too much fo
 To alleviate this you have the following options:
 
 - Turn down the brightness of the monitor to the minimal value
-- Place a screen between the monitor and the enlarger area
 - Use a monitor with deeper black levels (IPS, AV, OLED)
-- Turn off the monitor and use the application with voice output
-- Or simply: place a blanket over the monitor when exposing :)
+- Place a blanket over the monitor when exposing
+- Turn off the monitor and use the application with voice output. If you use a smart outlet for powering the monitor, you can toggle the monitor on and off with the TAB key.
 
 # Helpful resources
 Tints of red hex color codes to use for the interface color setting: 
