@@ -107,7 +107,7 @@ If you have more smart RGB LEDs to use as safelights, put their guids in the arr
   "papers": [ <-- Add the names of your papers to this list. For exposure values, use an empty string. Example: "new_paper" : "",
     {  
       "foma 18 cm"": "6.0 lumen for 12.0 seconds", <-- Example exposure values. These are set when you make a teststrip for chosen paper and double click on the best teststrip.
-      "foma 24 cm"": "6.0 lumen for 17.3 seconds" <-- Add your own papers to this list. Specify the length of the longest paper edge and leave the exposure values empty.
+      "foma 24 cm"": "6.0 lumen for 17.3 seconds" <-- Include the length of the longest paper edge in the name. It will be used in the calculator.
     }  
   ],  
   "teststrip": { 

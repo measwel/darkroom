@@ -49,7 +49,7 @@ class VoiceOutput():
     def say_message(self, msg):
         self.message_queue.put(msg)    
 
-####################### Beeper Class ##############################
+####################### Timer Beeper Class ##############################
 
 class Beeper():
     t = None
@@ -99,6 +99,9 @@ class UserInterface(Tk):
         self.paper = StringVar()
         self.mode = StringVar()
         self.increment = StringVar()
+        self.default_size = StringVar()
+        self.default_time = StringVar()
+        self.new_size = StringVar()
         self.calculated_exposure_time = DoubleVar(value=0.0)
         self.exposure_time = DoubleVar(value=self.settings["base_exposure_time"])
         self.slider_time = DoubleVar(value=self.settings["base_exposure_time"])
@@ -112,11 +115,12 @@ class UserInterface(Tk):
         self.measured_lux = 0
         self.lasttime = 0
         self.starttime = 0
+
         self.exposing = False
         self.enlarger_is_on = False
         self.monitor_is_on = True
 
-        ####################### Create Interface Elements ##############################
+        ####################### User Interface Elements ##############################
 
         # main window
         self.attributes('-fullscreen', True)
@@ -126,7 +130,7 @@ class UserInterface(Tk):
             self.grid_rowconfigure(i, weight=1)
 
         self.grid_columnconfigure(0, weight=1, uniform="foo")
-        self.grid_columnconfigure(1, weight=3, uniform="foo")
+        self.grid_columnconfigure(1, weight=2, uniform="foo")
         self.grid_columnconfigure(2, weight=1, uniform="foo")
 
         # exposure frame
@@ -283,12 +287,55 @@ class UserInterface(Tk):
         self.enlarger_switch_button.bind('<Button-1>', self.switch_enlarger)
         self.enlarger_switch_button.grid(sticky='we', padx=2, pady=(0,2))
 
+        # exposure time calculator frame
+        self.calculator_frame = Frame(self, bg=self.settings["foreground_color"])
+        self.calculator_frame.grid_columnconfigure(0, weight=1)
+        self.calculator_frame.grid_columnconfigure(1, weight=1)
+        self.calculator_frame.grid_columnconfigure(2, weight=1)
+        self.calculator_frame.grid_columnconfigure(3, weight=1)
+        self.calculator_frame.grid(column=1, row=1, columnspan=1, sticky='wen', padx=30)
+
+        self.calculator_label = self.style_element(Label(self.calculator_frame, text="Exposure Time Calculator"))
+        self.calculator_label.grid(columnspan=4, padx=2, pady=(2,2), ipady=10, sticky='we')
+
+        self.dummy_label = Label(self.calculator_frame, bg=self.settings["background_color"])
+        self.dummy_label.grid(columnspan=4, padx=2, pady=(0,2), ipady=1, sticky='we')
+
+        self.c1 =  self.style_element(Entry(self.calculator_frame, insertbackground=self.settings["foreground_color"], textvariable=self.default_size))
+        self.c2 =  self.style_element(Entry(self.calculator_frame, insertbackground=self.settings["foreground_color"], textvariable=self.new_size))
+        self.c3 =  self.style_element(Entry(self.calculator_frame, insertbackground=self.settings["foreground_color"], textvariable=self.default_time))
+
+        self.default_size.trace_add("write", self.calculate_time)
+        self.default_time.trace_add("write", self.calculate_time)
+        self.new_size.trace_add("write", self.calculate_time)
+
+        self.calculator_label2 = self.style_element(Label(self.calculator_frame, text="default size in cm", anchor="w"))
+        self.calculator_label2.grid(column=0, row=2, ipady=5, sticky='wens', padx=(2,0), pady=(0,2))
+
+        self.c1.grid(column=1, row=2, ipady=5, sticky='wens', padx=(2,0), pady=(0,2))
+
+        self.calculator_label2 = self.style_element(Label(self.calculator_frame, text="default time in seconds", anchor="w"))
+        self.calculator_label2.grid(column=0, row=3, ipady=5, sticky='wens', padx=(2,0), pady=(0,2))
+
+        self.c2.grid(column=3, row=2, ipady=5, sticky='wens', padx=2, pady=(0,2))
+
+        self.calculator_label2 = self.style_element(Label(self.calculator_frame, text="new size in cm", anchor="w"))
+        self.calculator_label2.grid(column=2, row=2, ipady=5, sticky='wens', padx=(2,0), pady=(0,2))
+
+        self.c3.grid(column=1, row=3, ipady=5, sticky='wens', padx=(2,0), pady=(0,2))
+
+        self.calculator_label2 = self.style_element(Label(self.calculator_frame, text="new time in seconds", anchor="w"))
+        self.calculator_label2.grid(column=2, row=3, ipady=5, sticky='wens', padx=(2,0), pady=(0,2))
+
+        self.c4 = self.style_element(Label(self.calculator_frame, text="", anchor="w"))
+        self.c4.grid(column=3, row=3, ipady=5, sticky='wens', padx=2, pady=(0,2))
+
+        # teststrips
         self.test_strip_frame =  Frame(self, bg=self.settings["foreground_color"])
         self.test_strip_frame.grid(column=1, row=1, columnspan=1, sticky='wens', padx=30)
         self.test_strip_frame.grid_rowconfigure(0,weight=1)
         self.test_strip_frame.grid_remove()
 
-        # teststrips
         for i in range (1, self.settings["teststrip"]["strips"]+1):
             strip_label = self.style_element(Label(self.test_strip_frame, text=""))
             strip_label.grid(column=i, row=0, padx=2, pady=(2,2), ipady=0, sticky='wens')
@@ -511,7 +558,12 @@ class UserInterface(Tk):
         if self.settings["voice_output"]: self.say(message)
 
     def style_element(self, widget):
-        widget.configure(font=(("Arial"), self.settings["interface_font_size"]), bg=self.settings["background_color"], fg=self.settings["foreground_color"], bd=0, highlightbackground=self.settings["foreground_color"], activebackground=self.settings["background_color"], activeforeground=self.settings["foreground_color"])
+
+        if widget.widgetName == "entry":
+            widget.configure(font=(("Arial"), self.settings["interface_font_size"]), bg=self.settings["background_color"], fg=self.settings["foreground_color"], bd=0, highlightbackground=self.settings["foreground_color"])
+        else:
+            widget.configure(font=(("Arial"), self.settings["interface_font_size"]), bg=self.settings["background_color"], fg=self.settings["foreground_color"], bd=0, highlightbackground=self.settings["foreground_color"], activebackground=self.settings["background_color"], activeforeground=self.settings["foreground_color"])
+              
         return widget
 
     def get_lux_from_sensor(self):
@@ -705,21 +757,17 @@ class UserInterface(Tk):
             self.settings["lamps_brightness"] = self.lamps_brightness.get()
             self.save_settings()
 
-    def get_time_for_paper(self):
-        for p in self.settings["papers"]:
-            for key in p.keys():
-                if key==self.paper.get():
-                    units=p[key].split(" lux for ")
-
-        if len(units) != 2: return 0
-        else: seconds = float(units[1].split()[0]) 
-        return seconds
-
     def paper_changed(self, *args):
         t = self.get_time_for_paper()
+        s = self.get_size_for_paper()
+        self.calculator_label.configure(text=f"Exposure Time Calculator for {self.paper.get()} paper")
         if self.mode.get() == "Timer": 
-            if t: self.exposure_time_changed(t)
+            if t: 
+                self.new_size.set("")
+                self.exposure_time_changed(t)
+                self.default_time.set(t)
             else: self.exposure_time_changed(self.settings["base_exposure_time"])
+            if s: self.default_size.set(s)
         else: self.reset_strips(None)
 
     def increment_changed(self, *args):
@@ -729,14 +777,17 @@ class UserInterface(Tk):
         self.measured_lux = 0.0
         self.i4["text"] = 0.0
         self.i6["text"] = 0.0
+        self.new_size.set("")
         if self.mode.get() == "Timer":
             self.test_strip_frame.grid_remove()
             self.exposure_slider.configure(state='normal')
             self.exposure_slider_f.configure(state='normal')
             self.reset_strip_button.grid_remove()
-            self.exposure_time_changed(self.settings["base_exposure_time"])
+            self.calculator_frame.grid()
+            self.exposure_time_changed(self.get_time_for_paper())
         elif self.mode.get() == "(T) Teststrip" or self.mode.get() == "(F) Teststrip":
             self.test_strip_frame.grid()
+            self.calculator_frame.grid_remove()
             self.exposure_slider.configure(state='disabled')
             self.exposure_slider_f.configure(state='disabled')
             self.reset_strip_button.grid()
@@ -794,6 +845,43 @@ class UserInterface(Tk):
             elif self.monitor_is_on: self.switch_monitor("off")
             else: self.switch_monitor("on")
 
+    def calculate_time(self, a,b,c):
+        default_size = self.is_float(self.c1.get())
+        default_time = self.is_float(self.c3.get())
+        new_size = self.is_float(self.c2.get())
+
+        if default_size and default_time and new_size:
+            factor = (new_size/default_size)**2
+            new_time = round(default_time * factor,1)
+            self.c4.configure(text=new_time)
+            self.exposure_time_changed(new_time)
+        else:
+            self.c4.configure(text="")
+
+    def is_float(self, n):
+        try:
+            n = float(n)
+            return n
+        except ValueError:
+            return None
+            
+    def get_time_for_paper(self):
+        units = None
+        for p in self.settings["papers"]:
+            for key in p.keys():
+                if key==self.paper.get():
+                    units=p[key].split(" lux for ")
+
+        if not units or len(units) != 2: return 0
+        else: seconds = float(units[1].split()[0]) 
+        return seconds
+
+    def get_size_for_paper(self):
+        name_parts = self.paper.get().split(" ")
+        for p in name_parts:
+            if self.is_float(p): return p
+        return 0
+
     def quit(self, ev):
         self.message_to_user("Goodbye")
         del(self.voice_engine)
@@ -801,6 +889,7 @@ class UserInterface(Tk):
         self.switch_darkroom_lamps("white")
         self.switch_monitor("on")
         self.destroy()
+        sys.exit()
 
 ####################### MAIN ##############################
 
