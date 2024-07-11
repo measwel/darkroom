@@ -1,26 +1,53 @@
 ####################### IMPORTS ##############################
 
 import tinytuya
-from playsound import playsound
+import math
+import numbers
 import pyttsx3
-from PIL import ImageGrab
-from tkinter import *
 import json
-from random import randrange
-import threading
 import concurrent.futures
 import time
-from fractions import Fraction
-import math
-from datetime import datetime
 import sys
-import numbers
+
+from PIL import ImageGrab
+from tkinter import *
+from random import randrange
+from fractions import Fraction
+from playsound import playsound
+from datetime import datetime
 from win32api import SendMessage
+from threading import Thread
+from queue import Queue
 
 if sys.platform == 'win32':
     import winsound
 
 debug = True
+
+####################### Voice Output Class ##############################
+
+class VoiceOutput():
+    engine = None
+    rate = None
+    message_queue = None
+    say_thread = None
+
+    def __init__(self, *args):
+        self.engine = pyttsx3.init()
+        self.engine.setProperty('voice', args[0])
+        self.message_queue = Queue()
+        say_thread = Thread(target=self.say, args=(self.message_queue,))
+        say_thread.deamon = True
+        say_thread.start()
+
+    def say(self, queue):
+        while True:
+            msg = queue.get()
+            self.engine.say(msg)
+            self.engine.runAndWait()
+
+    def say_message(self, msg):
+        self.message_queue.put(msg)    
 
 ####################### User Interface Class ##############################
 
@@ -39,6 +66,8 @@ class UserInterface(Tk):
 
         self.readSettingsAndDevices()
 
+        self.voice_engine = VoiceOutput(self.settings["voice_id"])
+
         self.paper = StringVar()
         self.mode = StringVar()
         self.increment = StringVar()
@@ -47,7 +76,6 @@ class UserInterface(Tk):
         self.slider_time = DoubleVar(value=self.settings["base_exposure_time"])
         self.f_stop = DoubleVar(value=0.0)
         self.lamps_brightness = IntVar(value=self.settings["lamps_brightness"])
-        self.calculated_exposure_time = DoubleVar(value=0.0)
         self.papers = []
         self.strip_times = []
         self.unaltered_f_times = []
@@ -154,14 +182,10 @@ class UserInterface(Tk):
         self.i2.grid(row=3, column=1, sticky='wens', padx=(2,2), pady=(2,0))
 
         self.i3 = self.style_element(Label(self.settings_frame, text="Calculated time", anchor="w"))
-        self.i3.grid(row=4, column=0, ipady=5, sticky='wens', padx=(2,0), pady=(2,0))
         self.i4 = self.style_element(Label(self.settings_frame, text=self.calculated_exposure_time.get(), anchor="w"))
-        self.i4.grid(row=4, column=1, sticky='wens', padx=(2,2), pady=(2,0))
 
         self.i5 = self.style_element(Label(self.settings_frame, text="Measured lux", anchor="w"))
-        self.i5.grid(row=5, column=0, ipady=5, sticky='wens', padx=(2,0), pady=(2,0))
         self.i6 = self.style_element(Label(self.settings_frame, text=self.measured_lux, anchor="w"))
-        self.i6.grid(row=5, column=1, sticky='wens', padx=(2,2), pady=(2,0))
 
         self.fill_papers_dropdown()
         self.i7 = self.style_element(Label(self.settings_frame, text="Photographic paper", anchor="w"))
@@ -200,9 +224,6 @@ class UserInterface(Tk):
 
         self.lamps_brightness_slider.grid(row=9, column=1, sticky='wens', padx=0, pady=0)
 
-        self.paper.set(self.papers[0])
-        self.mode.set(self.modes[0])
-
         # commands frame
         self.commands_frame = Frame(self, bg=self.settings["foreground_color"])
         self.commands_frame.grid_columnconfigure(0, weight=1)
@@ -210,30 +231,29 @@ class UserInterface(Tk):
 
         # commands
         self.commands_label = self.style_element(Label(self.commands_frame, text="Commands"))
-        self.commands_label.grid(padx=2, pady=(2,0), ipady=10, sticky='we')
+        self.commands_label.grid(padx=2, pady=(2,2), ipady=10, sticky='we')
 
         self.dummy_label = Label(self.commands_frame, bg=self.settings["background_color"])
-        self.dummy_label.grid(padx=2, pady=(2,0), ipady=1, sticky='we')
+        self.dummy_label.grid(padx=2, pady=(0,2), ipady=1, sticky='we')
 
         self.quit_button = self.style_element(Button(self.commands_frame, text="ESC : Quit", anchor="w"))
         self.quit_button.bind('<Button-1>', self.quit)
-        self.quit_button.grid(sticky='we', padx=2, pady=(2,0))
+        self.quit_button.grid(sticky='we', padx=2, pady=(0,2))
 
-        self.enlarger_switch_button = self.style_element(Button(self.commands_frame, text="SPACEBAR : Switch enlarger ON / OFF", anchor="w"))
-        self.enlarger_switch_button.bind('<Button-1>', self.switch_enlarger)
-        self.enlarger_switch_button.grid(sticky='we', padx=2, pady=(2,0))
-
+        self.switch_monitor_button = self.style_element(Button(self.commands_frame, text="TAB : Switch monitor ON / OFF", anchor="w"))
         self.measure_lux_button = self.style_element(Button(self.commands_frame, text="BACKSPACE : Measure lux", anchor="w"))
-        self.measure_lux_button.bind('<Button-1>', self.measure_lux)
-        self.measure_lux_button.grid(sticky='we', padx=2, pady=(2,0))
-
-        self.reset_strip_button = self.style_element(Button(self.commands_frame, text="SHIFT : Reset teststrip", anchor="w"))
-        self.reset_strip_button.bind('<Button-1>', self.reset_strips)
-        self.reset_strip_button.grid(sticky='we', padx=2, pady=(2,0))
 
         self.expose_button = self.style_element(Button(self.commands_frame, text=f'ENTER : Expose for {self.exposure_time.get()} seconds', anchor="w"))
         self.expose_button.bind('<Button-1>', self.expose)
-        self.expose_button.grid(sticky='we', padx=2, pady=(2,2))
+        self.expose_button.grid(sticky='we', padx=2, pady=(0,2))
+
+        self.reset_strip_button = self.style_element(Button(self.commands_frame, text="SHIFT : Reset teststrip", anchor="w"))
+        self.reset_strip_button.bind('<Button-1>', self.reset_strips)
+        self.reset_strip_button.grid(sticky='we', padx=2, pady=(0,2))
+                
+        self.enlarger_switch_button = self.style_element(Button(self.commands_frame, text="SPACEBAR : Switch enlarger ON / OFF", anchor="w"))
+        self.enlarger_switch_button.bind('<Button-1>', self.switch_enlarger)
+        self.enlarger_switch_button.grid(sticky='we', padx=2, pady=(0,2))
 
         self.test_strip_frame =  Frame(self, bg=self.settings["foreground_color"])
         self.test_strip_frame.grid(column=1, row=1, columnspan=1, sticky='wens', padx=30)
@@ -254,22 +274,26 @@ class UserInterface(Tk):
 
         self.bind( "<Escape>", self.quit )
         self.bind("<space>", self.switch_enlarger)
-        self.bind("<Tab>", self.switch_monitor)
-        self.bind("<BackSpace>", self.measure_lux)
         self.bind("<Return>", self.expose)
         self.bind("<Shift_R>", self.reset_strips)
-        self.bind("<Left>", lambda e: self.exposure_slider.set(self.exposure_slider.get()-self.settings["time_increment"]))
-        self.bind("<Right>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+self.settings["time_increment"]))
-        self.bind("<Down>", lambda e: self.exposure_slider.set(self.exposure_slider.get()-1))
-        self.bind("<Up>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+1))
-
+        self.bind("<Down>", lambda e: self.exposure_slider.set(self.exposure_slider.get()-self.settings["time_increment"]))
+        self.bind("<Up>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+self.settings["time_increment"]))
+        self.bind("<Left>", lambda e: self.exposure_slider.set(self.exposure_slider.get()-1))
+        self.bind("<Right>", lambda e: self.exposure_slider.set(self.exposure_slider.get()+1))
 
         self.reset_strip_button.grid_remove()
+
         self.paper.trace_add("write", self.paper_changed)
         self.mode.trace_add("write", self.mode_changed)
         self.increment.trace_add("write", self.increment_changed)
 
+        self.mode.set(self.modes[0])
+        self.paper.set(self.papers[0])
+
     ####################### FUNCTIONS ##############################
+
+    def say(self, message):
+        self.voice_engine.say_message(message)
 
     def readSettingsAndDevices(self):
         try:
@@ -287,34 +311,46 @@ class UserInterface(Tk):
         try:
             self.setup_devices() 
             self.test_devices()
-            if self.devices["light_sensor"]: self.devices["light_sensor"].turn_on()
+            if self.devices["enlarger_switch"]: self.devices["enlarger_switch"].turn_off()
             self.switch_darkroom_lamps("red")
             self.message_to_user("All devices are online.")
         except:
             msg = "See the README how to setup your devices."
-            self.after(5000, self.message_to_user, msg)
+            self.message_to_user(msg)
 
     def setup_devices(self):
         try:
             self.checkSettings()
             self.devices["light_sensor"] = None
             self.devices["enlarger_switch"] = None
+            self.devices["monitor_switch"] = None
             self.devices["darkroom_lamps"] = []
 
             for dev in self.devices["listing"]:
-                if dev["uuid"]==self.settings["light_intensity_sensor_uuid"]: 
-                    self.devices["light_sensor"] = self.get_device_handle(dev, 'outlet')
-
                 if dev["uuid"]==self.settings["enlarger_switch_uuid"]: 
                     self.devices["enlarger_switch"] = self.get_device_handle(dev, 'outlet')
-
-                if dev["uuid"]==self.settings["monitor_switch_uuid"]: 
-                    self.devices["monitor_switch"] = self.get_device_handle(dev, 'outlet')
 
                 for bu in self.settings["lamp_uuids"]:
                     if dev["uuid"]==bu: 
                         lamp = self.get_device_handle(dev, 'bulb')
                         self.devices["darkroom_lamps"].append(lamp)
+        
+                if dev["uuid"]==self.settings["monitor_switch_uuid"]: 
+                    self.devices["monitor_switch"] = self.get_device_handle(dev, 'outlet')
+                    self.switch_monitor_button.grid(sticky='we', padx=2, pady=(0,2))
+                    self.switch_monitor_button.bind('<Button-1>', self.switch_monitor)
+                    self.bind("<Tab>", self.switch_monitor)
+                                
+                if dev["uuid"]==self.settings["light_intensity_sensor_uuid"]: 
+                    self.devices["light_sensor"] = self.get_device_handle(dev, 'outlet')
+                    self.measure_lux_button.grid(sticky='we', padx=2, pady=(0,2))
+                    self.i3.grid(row=4, column=0, ipady=5, sticky='wens', padx=(2,0), pady=(2,0))
+                    self.i4.grid(row=4, column=1, sticky='wens', padx=(2,2), pady=(2,0))
+                    self.i5.grid(row=5, column=0, ipady=5, sticky='wens', padx=(2,0), pady=(2,0))
+                    self.i6.grid(row=5, column=1, sticky='wens', padx=(2,2), pady=(2,0))
+                    self.measure_lux_button.bind('<Button-1>', self.measure_lux)
+                    self.bind("<BackSpace>", self.measure_lux)
+
         except:
             raise Exception()
 
@@ -407,7 +443,7 @@ class UserInterface(Tk):
             self.starttime = time.time()
         elif state == "off":
             if self.exposing:
-                t = threading.Thread(target=self.beep, args=(700,))
+                t = Thread(target=self.beep, args=(700,))
                 t.start()
                 self.do_next_strip() 
             self.exposing = False  
@@ -425,12 +461,12 @@ class UserInterface(Tk):
                 self.switch_enlarger("off")
 
     def request_light_measurement(self):
-        self.message_to_user("Turn on the enlarger and then press BACKSPACE to measure the light intensity.")
+        self.message_to_user("Press BACKSPACE to measure the light intensity.")
 
     def expose(self, ev):
         if self.exposing or self.exposure_time.get() == 0 : return 
         
-        if not self.mode.get() == "Timer" and self.measured_lux == 0.0: 
+        if not self.mode.get() == "Timer" and self.measured_lux == 0.0 and self.devices["light_sensor"]: 
             return self.request_light_measurement()
 
         self.exposing = True
@@ -444,20 +480,9 @@ class UserInterface(Tk):
 
     def start_beeping(self):
         if self.exposing: 
-            t = threading.Thread(target=self.beep, args=(400,))
+            t = Thread(target=self.beep, args=(400,))
             t.start()
             self.after(1000, self.start_beeping)
-
-    def say(self, message):
-        def speak(message):
-            e = pyttsx3.init() 
-            e.setProperty('voice', self.settings["voice_id"])
-            e.say(message)
-            if e._inLoop: e.endLoop()
-            e.runAndWait()
-
-        t = threading.Thread(target=speak, args=(message,))
-        t.start()
 
     def message_to_user(self, message):
         print(message)
@@ -469,15 +494,14 @@ class UserInterface(Tk):
         return widget
 
     def get_lux_from_sensor(self):
-        #if not self.enlarger_is_on: return self.message_to_user("Please switch on the enlarger first.")
-        s = self.devices["light_sensor"]
-
-        if not s: 
-            lux = randrange(1,60)
-            self.after(7000, self.message_to_user,"The lux value is simulated. Add a light sensor to measure real lux values.")
-        else:
-            st = s.status()
-            if st and st["dps"]["7"]: lux = st["dps"]["7"]
+        lux = 0
+        if not self.enlarger_is_on:
+            self.message_to_user("Press SPACE to turn the enlarger on.") 
+            return lux
+        
+        s = self.devices["light_sensor"].status()
+        if s and s["dps"]["7"]: 
+            lux = s["dps"]["7"]
 
         return lux
             
@@ -538,7 +562,7 @@ class UserInterface(Tk):
                     p[key]=exposure_values
                     self.message_to_user(f'You chose strip {label.split()[0]}. {exposure_values} saved for {self.paper.get()} paper.')
                     self.save_settings()
-                    self.after(1000,self.capture)  # save screenshot
+                    self.after(1000, self.capture)  # save screenshot
 
     def save_settings(self):
         with open('settings.json', 'w', encoding='utf-8') as f: json.dump(self.settings, f, ensure_ascii=False, indent=2)
@@ -578,16 +602,19 @@ class UserInterface(Tk):
         steps = math.floor(self.settings["teststrip"]["strips"]/2)
         cor = 0
 
+        base_time = self.get_time_for_paper()
+        if not base_time: base_time = self.settings["teststrip"]["base_time"]
+
         for s in range(-steps, steps + 1) :
             if self.mode.get() == "(F) Teststrip":
                 stop_fraction = float(sum(Fraction(s) for s in self.settings["teststrip"]["f_stop_increment"].split()))
                 factor = 2**float(s*stop_fraction)
-                t2 = round(self.settings["teststrip"]["base_time"]*factor,1)
+                t2 = round(base_time*factor,1)
                 t = round(t2 - cor,1)
                 cor = t2
                 self.unaltered_f_times.append(t2)
             elif self.mode.get() == "(T) Teststrip":
-                t = round(self.settings["teststrip"]["base_time"] + (s*self.settings["teststrip"]["time_increment"] ), 1)
+                t = round(base_time + (s*self.settings["teststrip"]["time_increment"] ), 1)
             
             if t <= 0:
                 self.message_to_user("The exposure time must be greater than zero. Please check your teststrip settings.")
@@ -616,7 +643,7 @@ class UserInterface(Tk):
                 self.strip_labels[i].bind('<Double-Button-1>', self.save_exposure_time)
 
         msg = f'Double click on the best strip to save the exposure values for {self.paper.get()} paper.'
-        self.after(5000, self.message_to_user, msg)
+        self.message_to_user(msg)
 
     def do_next_strip(self):
         if not (self.mode.get() == "(F) Teststrip" or self.mode.get() == "(T) Teststrip") : 
@@ -629,9 +656,8 @@ class UserInterface(Tk):
         
         if self.strip_nr == 0:
             self.exposure_time_changed(self.strip_times[0])
-            if self.measured_lux == 0.0:
-                self.strip_nr = 1
-                return self.after(5000, self.request_light_measurement)
+            if self.measured_lux == 0.0 and self.devices["light_sensor"]: 
+                return self.request_light_measurement()
         else:
             self.strip_labels[self.strip_nr-1].configure(text=f"({self.strip_nr})", bg=self.settings["background_color"], fg=self.settings["foreground_color"]) 
             if self.mode.get() == "(T) Teststrip":
@@ -658,10 +684,24 @@ class UserInterface(Tk):
             self.settings["lamps_brightness"] = self.lamps_brightness.get()
             self.save_settings()
 
-    def paper_changed(*args):
-        return True
+    def get_time_for_paper(self):
+        for p in self.settings["papers"]:
+            for key in p.keys():
+                if key==self.paper.get():
+                    units=p[key].split(" lux for ")
 
-    def increment_changed(*args):
+        if len(units) != 2: return 0
+        else: seconds = float(units[1].split()[0]) 
+        return seconds
+
+    def paper_changed(self, *args):
+        t = self.get_time_for_paper()
+        if self.mode.get() == "Timer": 
+            if t: self.exposure_time_changed(t)
+            else: self.exposure_time_changed(self.settings["base_exposure_time"])
+        else: self.reset_strips(None)
+
+    def increment_changed(self, *args):
         return True
 
     def mode_changed(self, *args):
@@ -735,7 +775,6 @@ class UserInterface(Tk):
 
     def quit(self, ev):
         if self.devices["enlarger_switch"]: self.devices["enlarger_switch"].turn_off()
-        if self.devices["light_sensor"]: self.devices["light_sensor"].turn_off()
         self.switch_darkroom_lamps("white")
         self.switch_monitor("on")
         sys.exit()

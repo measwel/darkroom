@@ -40,10 +40,15 @@ G. Run the application. You can run it without set up devices, but then device c
 1. Install your smart devices.
 
 The smart outlet switch is mandatory. Please plug the enlarger power cord into it. The outlet switch will control the exposure time. 
-The second smart outlet switch is optional. Please plug your computer monitor power cord into it. This will allow switching off the monitor when exposing.  
-The RGB LED(s) are optional, but recommended. They work great as darkroom safelights. If you use a traditional safelight, set the option "switch_off_lamps_when_exposing" to false.  
-The light sensor is optional, but recommended. It allows automatic exposure time calculation. It should be placed on the baseboard, facing the enlarger lens.  
-To take a light intensity (lux) measurement, switch on the enlarger with SPACEBAR, make your settings on the enlarger, then press BACKSPACE.  
+The second smart outlet switch is optional but recommended. Please plug your computer monitor power cord into it. This will allow switching off the monitor when exposing.  
+The RGB LED(s) are optional, but also recommended. They work great as darkroom safelights. If you use a traditional safelight, set the option "switch_off_lamps_when_exposing" to false.  
+
+**Notes on the light sensor**
+The light sensor is optional. It allows automatic exposure time calculation. It should be placed on the baseboard, facing the enlarger lens.  
+To take a light intensity measurement, switch on the enlarger with SPACEBAR, make your settings on the enlarger, then press BACKSPACE.  
+The currently available tuya light intensity sensor is not sensitive enough to make reliable calculations in all conditions.  
+The functionality has been left in the application however, in the hope a more sensitive sensor will become available in the future.
+If you do not wish to use this functionality, simply leave the light sensor uuid empty in the settings.json file.
 
 2. Create the devices.json file
 
@@ -83,7 +88,7 @@ If you have more smart RGB LEDs to use as safelights, put their guids in the arr
     "xxx", "yyy"
   ],  
   "enlarger_switch_uuid": "xxx", <-- Set uuid of your smart power outlet that will control your enlarger. Mandatory.  
-  "light_intensity_sensor_uuid": "xxx", <-- Set uuid of your light intensity sensor. Optional. Without it, automatic exposure time calculation will not work.  
+  "light_intensity_sensor_uuid": "xxx", <-- Set uuid of your light intensity sensor. Optional.
   "lamps_brightness": 123,  <-- Initial safelights brightness. It will get updated automatically if you change it in the application.
   "base_exposure_time": 20.0, <-- The default exposure time that will be in the middle of the time and F-Stop adjustment scales.
   "time_increments": 0.1, <-- Exposure time increase step in seconds, when moving the exposure slider.  
@@ -101,14 +106,14 @@ If you have more smart RGB LEDs to use as safelights, put their guids in the arr
   "voice_id": "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Speech\\Voices\\Tokens\\TTS_MS_EN-GB_HAZEL_11.0", <-- Registry key of the voice to use.  
   "papers": [ <-- Add the names of your papers to this list. For exposure values, use an empty string. Example: "new_paper" : "",
     {  
-      "foma low": "744.0 lumen for 5.0 seconds", <-- Example exposure values. These are set when you make a teststrip for chosen paper and double click on the best teststrip.
-      "foma high": "355.0 lumen for 13.3 seconds"
+      "foma 18 cm"": "6.0 lumen for 12.0 seconds", <-- Example exposure values. These are set when you make a teststrip for chosen paper and double click on the best teststrip.
+      "foma 24 cm"": "6.0 lumen for 17.3 seconds" <-- Add your own papers to this list. Specify the length of the longest paper edge and leave the exposure values empty.
     }  
   ],  
   "teststrip": { 
     "save_screenshot": true, <-- Should a screenshot be saved to the program directory, when you double click on the best teststrip? 
     "strips": 11, <-- Number of strips on the test photo. Choose an odd number.
-    "base_time": 15, <-- The exposure time in seconds of the teststrip that will be in the middle. 
+    "base_time": 15, <-- The exposure time in seconds that will be in the middle of the teststrip for an untested paper. If you already made a teststrip for a given paper and set the best basic exposure time for it, it will be used instead of this value.
     "time_increment": 3, <-- Number of seconds of difference between two consecutive teststrips. Applies to (T) Teststrip mode.
     "f_stop_increment": "1/3" <-- F-Stop difference between two consecutive teststrips. Applies to (F) Teststrip mode.
   }  
