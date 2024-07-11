@@ -16,7 +16,7 @@ from fractions import Fraction
 from playsound import playsound
 from datetime import datetime
 from win32api import SendMessage
-from threading import Thread
+from threading import Thread, Timer
 from queue import Queue
 
 if sys.platform == 'win32':
@@ -49,6 +49,33 @@ class VoiceOutput():
     def say_message(self, msg):
         self.message_queue.put(msg)    
 
+####################### Beeper Class ##############################
+
+class Beeper():
+    t = None
+    continous_beep = 0
+    stop_beep = 0
+    time_counter = 0.0
+
+    def __init__(self, *args):
+        self.continous_beep = 400
+        self.stop_beep = 700
+
+    def start_beeping(self, beep_time):
+        if self.time_counter < beep_time:
+            self.time_counter = round(self.time_counter + 0.1, 1)
+            if self.time_counter.is_integer(): 
+                Thread(target=self.beep, args=(self.continous_beep,)).start()
+            self.t = Timer(0.1, self.start_beeping, (beep_time,))
+            self.t.daemon = True
+            self.t.start()
+        else:
+            self.time_counter = 0.0
+            Thread(target=self.beep, args=(self.stop_beep,)).start()
+
+    def beep(self, pitch):
+        winsound.Beep(pitch, 500)
+
 ####################### User Interface Class ##############################
 
 class UserInterface(Tk):
@@ -67,6 +94,7 @@ class UserInterface(Tk):
         self.readSettingsAndDevices()
 
         self.voice_engine = VoiceOutput(self.settings["voice_id"])
+        self.beeper = Beeper()
 
         self.paper = StringVar()
         self.mode = StringVar()
@@ -290,6 +318,8 @@ class UserInterface(Tk):
         self.mode.set(self.modes[0])
         self.paper.set(self.papers[0])
 
+        self.message_to_user("Welcome")
+
     ####################### FUNCTIONS ##############################
 
     def say(self, message):
@@ -434,6 +464,9 @@ class UserInterface(Tk):
         return self.check_status(status, d)
 
     def switch_enlarger(self, state):
+        d = self.devices["enlarger_switch"]
+        if not d: return self.message_to_user("Enlarger switch is not available.")
+
         if state == "on":
             if self.settings["switch_off_monitor_when_exposing"]: self.switch_monitor("off")
             if self.settings["switch_off_lamps_when_exposing"]: self.switch_darkroom_lamps("off")
@@ -443,18 +476,15 @@ class UserInterface(Tk):
             self.starttime = time.time()
         elif state == "off":
             if self.exposing:
-                t = Thread(target=self.beep, args=(700,))
-                t.start()
                 self.do_next_strip() 
-            self.exposing = False  
+                print(f"exposed for: {time.time() - self.starttime}")
 
-            print(f"exposed for: {time.time() - self.starttime}")
-            d = self.devices["enlarger_switch"]
+            self.exposing = False  
+            
             if d: d.turn_off() 
             self.enlarger_is_on = False
             if self.settings["switch_off_lamps_when_exposing"]: self.switch_darkroom_lamps("red")
         else:
-            if not self.devices["enlarger_switch"]: return self.message_to_user("Enlarger switch is not available. Please read the README how to set it up.")
             if not self.enlarger_is_on: 
                 self.switch_enlarger("on")
             else:
@@ -469,20 +499,11 @@ class UserInterface(Tk):
         if not self.mode.get() == "Timer" and self.measured_lux == 0.0 and self.devices["light_sensor"]: 
             return self.request_light_measurement()
 
+        if self.settings["beep_each_second"]: self.beeper.start_beeping(self.exposure_time.get())
         self.exposing = True
-        self.after(1000, self.start_beeping)
         self.switch_enlarger("on")
         t = self.exposure_time.get()*1000
         self.after(int(t), self.switch_enlarger, "off") 
-
-    def beep(self, i):
-        if self.settings["beep_each_second"]: winsound.Beep(i,900)
-
-    def start_beeping(self):
-        if self.exposing: 
-            t = Thread(target=self.beep, args=(400,))
-            t.start()
-            self.after(1000, self.start_beeping)
 
     def message_to_user(self, message):
         print(message)
@@ -774,10 +795,12 @@ class UserInterface(Tk):
             else: self.switch_monitor("on")
 
     def quit(self, ev):
-        if self.devices["enlarger_switch"]: self.devices["enlarger_switch"].turn_off()
+        self.message_to_user("Goodbye")
+        del(self.voice_engine)
+        self.switch_enlarger("off")
         self.switch_darkroom_lamps("white")
         self.switch_monitor("on")
-        sys.exit()
+        self.destroy()
 
 ####################### MAIN ##############################
 
