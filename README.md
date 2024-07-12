@@ -7,7 +7,7 @@ Automated darkroom control for photo development based on smartlife / tuya devic
 - Mandatory: a wifi controlled smartlife/tuya power outlet for switching the enlarger. Example: https://ae01.alicdn.com/kf/S97fb815945d1451cbc119818dae47ebdA/
 Tuya-Smart-Plug-Wifi-EU-16a-20a-Smart-Socket-mit-Power-Monitor-Timing-Smart-Life-Support.jpg_640x640.jpg_.webp
 - Optionally: a wifi controlled smartlife/tuya power outlet for switching the computer monitor. 
-- Optionally: one or more wifi controlled smartlife/tuya RGB LED bulbs. Example: https://ae01.alicdn.com/kf/S46afcd28b23b400791dad89e8fa60a265/Tuya-wifi-bluetooth-smart-lampe-alexa-led-lampe-e27-rgb-smart-gl-hbirnen-110v-220v-smart.jpg_.webp
+- Optionally: one or more wifi controlled smartlife/tuya RGB LED bulbs to serve as darkroom safe lights. Example: https://ae01.alicdn.com/kf/S46afcd28b23b400791dad89e8fa60a265/Tuya-wifi-bluetooth-smart-lampe-alexa-led-lampe-e27-rgb-smart-gl-hbirnen-110v-220v-smart.jpg_.webp
 - Optionally: a wifi controlled usb powered smartlife/tuya light sensor. Example: https://ae01.alicdn.com/kf/S9557b883c7ea4769bb3171bf9ce00533T/Tuya-ZigBee-Wifi-Lichtsensor-Intelligente-Home-Beleuchtung-Sensor-Helligkeits-detektor-Automatisierung-Arbeit-mit-Smart-Life-Linkage.jpg_640x640.jpg_.webp
 - Recommended: A LED bulb for the enlarger head. White glass, at least 2000 lumen, 2700 Kelvin (warm white). Example: https://shop.ledvance.com/cdn/shop/files/4058075305014_290_LEDSCLA15017W-827230VGLFRE27FS1OSRAM.jpg or https://www.beleuchtung-mit-led.de/images/product_images/original_images/ledvance_4099854069833.jpg
 
@@ -96,7 +96,9 @@ If you have more smart RGB LEDs to use as safelights, put their guids in the arr
   "f_stop_steps": 50, <-- Total number of F-Stop adjustment steps on both sides of the F-Stop adjustment slider.
   "red": "#6a0500", <-- Hex code of interface color. See: https://icolorpalette.com/color/pastel-red  
     "red": "#6a0500",
-  "interface_font_size": 15, <-- fontsize of all elements except sliders
+  "interface_font_size": 15, <-- font
+  
+  size of all elements except sliders
   "large_slider_font_size": 20,  <-- fontsize of the large sliders
   "small_slider_font_size": 10, <-- fontsize of the small sliders
   "switch_off_lamps_when_exposing": true, <-- Whether the darkroom lamps should go off when the enlarger is switched on.  
